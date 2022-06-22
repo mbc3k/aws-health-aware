@@ -78,7 +78,7 @@ def send_alert(event_details, affected_accounts, affected_entities, event_type):
             print("Got an error while sending message to Slack: ", e.code, e.reason)
         except URLError as e:
             print("Server connection failed: ", e.reason)
-            pass            
+            pass
     if "office.com/webhook" in teams_url:
         try:
             print("Sending the alert to Teams")
@@ -149,7 +149,7 @@ def send_org_alert(event_details, affected_org_accounts, affected_org_entities, 
             print("Got an error while sending message to Slack: ", e.code, e.reason)
         except URLError as e:
             print("Server connection failed: ", e.reason)
-            pass            
+            pass
     if "office.com/webhook" in teams_url:
         try:
             print("Sending the alert to Teams")
@@ -396,7 +396,7 @@ def update_org_ddb(event_arn, str_update, status_code, event_details, affected_o
                 }
             )
             affected_org_accounts_details = [
-                    f"{get_account_name(account_id)} ({account_id})" for account_id in affected_org_accounts]            
+                    f"{get_account_name(account_id)} ({account_id})" for account_id in affected_org_accounts]
             # send to configured endpoints
             if status_code != "closed":
                 send_org_alert(event_details, affected_org_accounts_details, affected_org_entities, event_type="create")
@@ -423,7 +423,7 @@ def update_org_ddb(event_arn, str_update, status_code, event_details, affected_o
                     }
                 )
                 affected_org_accounts_details = [
-                    f"{get_account_name(account_id)} ({account_id})" for account_id in affected_org_accounts]                
+                    f"{get_account_name(account_id)} ({account_id})" for account_id in affected_org_accounts]
                 # send to configured endpoints
                 if status_code != "closed":
                     send_org_alert(event_details, affected_org_accounts_details, affected_org_entities, event_type="create")
@@ -524,7 +524,7 @@ def get_secrets():
     get_secret_value_response_teams = ""
     get_secret_value_response_slack = ""
     event_bus_name = "EventBusName"
-    secret_assumerole_name = "AssumeRoleArn" 
+    secret_assumerole_name = "AssumeRoleArn"
 
     # create a Secrets Manager client
     session = boto3.session.Session()
@@ -541,7 +541,7 @@ def get_secrets():
         if e.response['Error']['Code'] == 'AccessDeniedException':
             print("No AWS Secret configured for Teams, skipping")
             teams_channel_id = "None"
-        else: 
+        else:
             print("There was an error with the Teams secret: ",e.response)
             teams_channel_id = "None"
     finally:
@@ -557,7 +557,7 @@ def get_secrets():
         if e.response['Error']['Code'] == 'AccessDeniedException':
             print("No AWS Secret configured for Slack, skipping")
             slack_channel_id = "None"
-        else:    
+        else:
             print("There was an error with the Slack secret: ",e.response)
             slack_channel_id = "None"
     finally:
@@ -573,7 +573,7 @@ def get_secrets():
         if e.response['Error']['Code'] == 'AccessDeniedException':
             print("No AWS Secret configured for Chime, skipping")
             chime_channel_id = "None"
-        else:    
+        else:
             print("There was an error with the Chime secret: ",e.response)
             chime_channel_id = "None"
     finally:
@@ -589,14 +589,14 @@ def get_secrets():
         if e.response['Error']['Code'] == 'AccessDeniedException':
             print("No AWS Secret configured for Assume Role, skipping")
             assumerole_channel_id = "None"
-        else:    
+        else:
             print("There was an error with the Assume Role secret: ",e.response)
             assumerole_channel_id = "None"
     finally:
         if 'SecretString' in get_secret_value_response_assumerole:
             assumerole_channel_id = get_secret_value_response_assumerole['SecretString']
         else:
-            assumerole_channel_id = "None"    
+            assumerole_channel_id = "None"
     try:
         get_secret_value_response_eventbus = client.get_secret_value(
             SecretId=event_bus_name
@@ -605,23 +605,23 @@ def get_secrets():
         if e.response['Error']['Code'] == 'AccessDeniedException':
             print("No AWS Secret configured for EventBridge, skipping")
             eventbus_channel_id = "None"
-        else:    
+        else:
             print("There was an error with the EventBridge secret: ",e.response)
             eventbus_channel_id = "None"
     finally:
         if 'SecretString' in get_secret_value_response_eventbus:
             eventbus_channel_id = get_secret_value_response_eventbus['SecretString']
         else:
-            eventbus_channel_id = "None"            
+            eventbus_channel_id = "None"
         secrets = {
             "teams": teams_channel_id,
             "slack": slack_channel_id,
             "chime": chime_channel_id,
             "eventbusname": eventbus_channel_id,
             "ahaassumerole": assumerole_channel_id
-        }    
+        }
         # uncomment below to verify secrets values
-        #print("Secrets: ",secrets)   
+        #print("Secrets: ",secrets)
     return secrets
 
 
@@ -640,7 +640,7 @@ def describe_events(health_client):
             {
                 'from': time_delta
             }
-        ]    
+        ]
     }
 
     if health_event_type == "issue":
@@ -654,7 +654,10 @@ def describe_events(health_client):
         region_filter = {'regions': dict_regions}
         str_filter.update(region_filter)
 
-    event_paginator = health_client.get_paginator('describe_events')
+    if org_status == "No":
+    	event_paginator = health_client.get_paginator('describe_events')
+    else:
+    	event_paginator = health_client.get_paginator('describe_events_for_organization')
     event_page_iterator = event_paginator.paginate(filter=str_filter)
     for response in event_page_iterator:
         events = response.get('events', [])
@@ -670,7 +673,26 @@ def describe_events(health_client):
 
                 # get non-organizational view requirements
                 affected_accounts = get_health_accounts(health_client, event, event_arn)
-                affected_entities = get_health_entities(health_client, event, event_arn)
+                if os.environ['ACCOUNT_IDS'] == "None" or os.environ['ACCOUNT_IDS'] == "":
+                    update_org_ddb_flag=True
+                else:
+                    account_ids_to_filter = getAccountIDs()
+                    if affected_accounts != []:
+                        focused_org_accounts = [i for i in affected_accounts if i not in account_ids_to_filter]
+                        print("Focused list is ", focused_org_accounts)
+                        if focused_org_accounts != []:
+                            update_org_ddb_flag=True
+                            affected_accounts = focused_org_accounts
+                        else:
+                            update_org_ddb_flag=False
+                            print("Focused Organization Account list is empty")
+                    else:
+                        update_org_ddb_flag=True
+
+                if org_status == "No":
+	                affected_entities = get_health_entities(health_client, event, event_arn)
+	            else:
+	            	affected_entities = get_health_org_entities(health_client, event, event_arn, affected_org_accounts)
 
                 # get event details
                 event_details = json.dumps(describe_event_details(health_client, event_arn), default=myconverter)
@@ -728,7 +750,7 @@ def describe_org_events(health_client):
                 status_code = event['statusCode']
                 str_update = parser.parse((event['lastUpdatedTime']))
                 str_update = str_update.strftime(str_ddb_format_sec)
-                
+
                 # get organizational view requirements
                 affected_org_accounts = get_health_org_accounts(health_client, event, event_arn)
                 if os.environ['ACCOUNT_IDS'] == "None" or os.environ['ACCOUNT_IDS'] == "":
@@ -803,7 +825,7 @@ def send_to_eventbridge(message, event_type, event_bus):
         {'Source': 'aha', 'DetailType': event_type, 'Detail': '{ "mydata": ' + json.dumps(message) + ' }',
          'EventBusName': event_bus}, ])
     print("Response is:", response)
-    
+
 def getAccountIDs():
     account_ids  = ""
     key_file_name = os.environ['ACCOUNT_IDS']
@@ -820,27 +842,27 @@ def getAccountIDs():
 def get_sts_token(service):
     assumeRoleArn = get_secrets()["ahaassumerole"]
     boto3_client = None
-    
+
     if "arn:aws:iam::" in assumeRoleArn:
         ACCESS_KEY = []
         SECRET_KEY = []
         SESSION_TOKEN = []
-        
+
         sts_connection = boto3.client('sts')
-        
+
         ct = datetime.now()
         role_session_name = "cross_acct_aha_session"
-        
+
         acct_b = sts_connection.assume_role(
           RoleArn=assumeRoleArn,
           RoleSessionName=role_session_name,
           DurationSeconds=900,
         )
-        
+
         ACCESS_KEY    = acct_b['Credentials']['AccessKeyId']
         SECRET_KEY    = acct_b['Credentials']['SecretAccessKey']
         SESSION_TOKEN = acct_b['Credentials']['SessionToken']
-        
+
         # create service client using the assumed role credentials, e.g. S3
         boto3_client = boto3.client(
           service,
@@ -853,7 +875,7 @@ def get_sts_token(service):
     else:
         boto3_client = boto3.client(service, config=config)
         print("Running in management account deployment mode")
-    
+
     return boto3_client
 
 def main(event, context):
