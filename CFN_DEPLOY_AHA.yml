@@ -654,7 +654,7 @@ Resources:
       Timeout: 600
       Role:
         'Fn::Sub': '${LambdaExecutionRole.Arn}'
-      Runtime: python3.8
+      Runtime: python3.9
       Environment:
         Variables:
           ACCOUNT_IDS:
