@@ -8,6 +8,7 @@ Metadata:
         Parameters:
           - AWSOrganizationsEnabled
           - AWSHealthEventType
+          - AWSHealthEventTypeCode
       - Label:
           default: Package Information
         Parameters:
@@ -43,6 +44,8 @@ Metadata:
         default: ARN of the AWS Organizations Management Account assume role (if using)
       AWSHealthEventType:
         default: The types of events to get alerted on
+      AWSHealthEventTypeCode:
+        default: Event codes to filter out
       S3Bucket:
         default: Name of S3 Bucket
       S3Key:
@@ -131,6 +134,12 @@ Parameters:
     AllowedValues:
       - 'issue | accountNotification | scheduledChange'
       - 'issue'
+    Type: String
+  AWSHealthEventTypeCode:
+    Description: >-
+      Select the event type codes that you want AHA to ignore. Example: AWS_VPN_REDUNDANCY_LOSS Refer to
+      https://docs.aws.amazon.com/health/latest/APIReference/API_EventType.html for more information on EventType.
+    Default: None
     Type: String
   S3Bucket:
     Description: >-
@@ -415,6 +424,7 @@ Resources:
                       EVENT_SEARCH_BACK: ${EventSearchBack}
                       ORG_STATUS: ${AWSOrganizationsEnabled}
                       HEALTH_EVENT_TYPE: "${AWSHealthEventType}"
+                      HEALTH_EVENT_CODE: "${AWSHealthEventTypeCode}"
                       MANAGEMENT_ROLE_ARN: "${ManagementAccountRoleArn}"
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -677,6 +687,8 @@ Resources:
             Ref: AWSOrganizationsEnabled
           HEALTH_EVENT_TYPE:
             Ref: AWSHealthEventType
+          HEALTH_EVENT_CODE:
+            Ref: AWSHealthEventTypeCode
           MANAGEMENT_ROLE_ARN:
             Ref: ManagementAccountRoleArn
 
