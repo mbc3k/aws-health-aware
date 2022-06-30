@@ -630,6 +630,7 @@ def describe_events(health_client):
     # set hours to search back in time for events
     delta_hours = os.environ['EVENT_SEARCH_BACK']
     health_event_type = os.environ['HEALTH_EVENT_TYPE']
+    health_event_code = os.environ['HEALTH_EVENT_CODE']
     delta_hours = int(delta_hours)
     time_delta = (datetime.now() - timedelta(hours=delta_hours))
     print("Searching for events and updates made after: ", time_delta)
@@ -668,6 +669,11 @@ def describe_events(health_client):
                 str_update = parser.parse((event['lastUpdatedTime']))
                 str_update = str_update.strftime(str_ddb_format_sec)
 
+                # don't process the event if it has an event code we don't care about
+                if (len(health_event_code) > 0) and (health_event_code in event_arn):
+                    print("Skipping ", event_arn, " because it contains ", health_event_code)
+                    continue
+
                 # get non-organizational view requirements
                 affected_accounts = get_health_accounts(health_client, event, event_arn)
                 affected_entities = get_health_entities(health_client, event, event_arn)
@@ -693,6 +699,7 @@ def describe_org_events(health_client):
     # set hours to search back in time for events
     delta_hours = os.environ['EVENT_SEARCH_BACK']
     health_event_type = os.environ['HEALTH_EVENT_TYPE']
+    health_event_code = os.environ['HEALTH_EVENT_CODE']
     dict_regions = os.environ['REGIONS']
     delta_hours = int(delta_hours)
     time_delta = (datetime.now() - timedelta(hours=delta_hours))
@@ -728,6 +735,11 @@ def describe_org_events(health_client):
                 status_code = event['statusCode']
                 str_update = parser.parse((event['lastUpdatedTime']))
                 str_update = str_update.strftime(str_ddb_format_sec)
+
+                # don't process the event if it has an event code we don't care about
+                if (len(health_event_code) > 0) and (health_event_code in event_arn):
+                    print("Skipping ", event_arn, " because it contains ", health_event_code)
+                    continue
 
                 # get organizational view requirements
                 affected_org_accounts = get_health_org_accounts(health_client, event, event_arn)
