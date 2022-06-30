@@ -737,7 +737,7 @@ def describe_org_events(health_client):
                 str_update = str_update.strftime(str_ddb_format_sec)
 
                 # don't process the event if it has an event code we don't care about
-                if (len(health_event_code) > 0) and (health_event_code in event_arn):
+                if (health_event_code in event_arn):
                     print("Skipping ", event_arn, " because it contains ", health_event_code)
                     continue
 
