@@ -870,7 +870,6 @@ def get_sts_token(service):
 
 def main(event, context):
     print("THANK YOU FOR CHOOSING AWS HEALTH AWARE!")
-    print("Code is ", os.environ['HEALTH_EVENT_CODE'])
     health_client = get_sts_token('health')
     org_status = os.environ['ORG_STATUS']
     #str_ddb_format_sec = '%s'
