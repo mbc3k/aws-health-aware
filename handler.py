@@ -625,11 +625,11 @@ def get_secrets():
     return secrets
 
 def skip_health_code(health_event_codes, arn):
-	for code in health_event_codes:
-		if (code in arn):
-			print("Skipping", arn, "because it contains", code)
-			return True
-	return False
+    for code in health_event_codes:
+        if (code in arn):
+            print("Skipping", arn, "because it contains", code)
+            return True
+    return False
 
 def describe_events(health_client):
     str_ddb_format_sec = '%s'
