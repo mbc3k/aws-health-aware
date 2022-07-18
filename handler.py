@@ -624,13 +624,19 @@ def get_secrets():
         #print("Secrets: ",secrets)
     return secrets
 
+def skip_health_code(health_event_codes, arn):
+	for code in health_event_codes:
+		if (code in arn):
+			print("Skipping", arn, "because it contains", code)
+			return True
+	return False
 
 def describe_events(health_client):
     str_ddb_format_sec = '%s'
     # set hours to search back in time for events
     delta_hours = os.environ['EVENT_SEARCH_BACK']
     health_event_type = os.environ['HEALTH_EVENT_TYPE']
-    health_event_code = os.environ['HEALTH_EVENT_CODE']
+    health_event_codes = os.environ['HEALTH_EVENT_CODES']
     delta_hours = int(delta_hours)
     time_delta = (datetime.now() - timedelta(hours=delta_hours))
     print("Searching for events and updates made after: ", time_delta)
@@ -655,6 +661,8 @@ def describe_events(health_client):
         region_filter = {'regions': dict_regions}
         str_filter.update(region_filter)
 
+    health_event_codes = [code.strip() for code in health_event_codes.split(',')]
+
     event_paginator = health_client.get_paginator('describe_events')
     event_page_iterator = event_paginator.paginate(filter=str_filter)
     for response in event_page_iterator:
@@ -670,8 +678,7 @@ def describe_events(health_client):
                 str_update = str_update.strftime(str_ddb_format_sec)
 
                 # don't process the event if it has an event code we don't care about
-                if (health_event_code in event_arn):
-                    print("Skipping ", event_arn, " because it contains ", health_event_code)
+                if skip_health_code(health_event_codes, event_arn):
                     continue
 
                 # get non-organizational view requirements
@@ -699,7 +706,7 @@ def describe_org_events(health_client):
     # set hours to search back in time for events
     delta_hours = os.environ['EVENT_SEARCH_BACK']
     health_event_type = os.environ['HEALTH_EVENT_TYPE']
-    health_event_code = os.environ['HEALTH_EVENT_CODE']
+    health_event_codes = os.environ['HEALTH_EVENT_CODES']
     dict_regions = os.environ['REGIONS']
     delta_hours = int(delta_hours)
     time_delta = (datetime.now() - timedelta(hours=delta_hours))
@@ -722,6 +729,8 @@ def describe_org_events(health_client):
         region_filter = {'regions': dict_regions}
         str_filter.update(region_filter)
 
+    health_event_codes = [code.strip() for code in health_event_codes.split(',')]
+
     org_event_paginator = health_client.get_paginator('describe_events_for_organization')
     org_event_page_iterator = org_event_paginator.paginate(filter=str_filter)
     for response in org_event_page_iterator:
@@ -737,8 +746,7 @@ def describe_org_events(health_client):
                 str_update = str_update.strftime(str_ddb_format_sec)
 
                 # don't process the event if it has an event code we don't care about
-                if (health_event_code in event_arn):
-                    print("Skipping ", event_arn, " because it contains ", health_event_code)
+                if skip_health_code(health_event_codes, event_arn):
                     continue
 
                 # get organizational view requirements
