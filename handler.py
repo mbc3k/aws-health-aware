@@ -727,7 +727,7 @@ def describe_org_events(health_client):
         region_filter = {'regions': dict_regions}
         str_filter.update(region_filter)
 
-    health_event_codes = [code.strip() for code in os.environ['HEALTH_EVENT_CODES'].split(',')]
+    health_event_codes = [ code.strip() for code in os.environ['HEALTH_EVENT_CODES'].split(',') ]
 
     org_event_paginator = health_client.get_paginator('describe_events_for_organization')
     org_event_page_iterator = org_event_paginator.paginate(filter=str_filter)
