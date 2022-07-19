@@ -135,12 +135,12 @@ Parameters:
       - 'issue | accountNotification | scheduledChange'
       - 'issue'
     Type: String
-  AWSHealthEventTypeCode:
+  AWSHealthEventTypeCodes:
     Description: >-
-      Select the event type codes that you want AHA to ignore. Example: AWS_VPN_REDUNDANCY_LOSS Refer to
+      Optionally enter the event type codes that you want AHA to ignore, separated by commas. Example: AWS_VPN_REDUNDANCY_LOSS,AWS_EC2_OPERATIONAL_ISSUE Refer to
       https://docs.aws.amazon.com/health/latest/APIReference/API_EventType.html for more information on EventType.
     Default: None
-    Type: String
+    Type: CommaDelimitedList
   S3Bucket:
     Description: >-
       Name of your S3 Bucket where the AHA Package .zip resides. Just the name
@@ -424,7 +424,7 @@ Resources:
                       EVENT_SEARCH_BACK: ${EventSearchBack}
                       ORG_STATUS: ${AWSOrganizationsEnabled}
                       HEALTH_EVENT_TYPE: "${AWSHealthEventType}"
-                      HEALTH_EVENT_CODE: "${AWSHealthEventTypeCode}"
+                      HEALTH_EVENT_CODES: "${AWSHealthEventTypeCodes}"
                       MANAGEMENT_ROLE_ARN: "${ManagementAccountRoleArn}"
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
