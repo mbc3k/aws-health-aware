@@ -624,10 +624,10 @@ def get_secrets():
         #print("Secrets: ",secrets)
     return secrets
 
-def skip_health_code(health_event_codes, arn):
-    for code in health_event_codes:
-        if (code in arn):
-            print("Skipping", arn, "because it contains", code)
+def skip_health_code(codes, arn):
+    for c in codes:
+        if (c in arn):
+            print("Skipping", arn, "because it contains", c)
             return True
     return False
 
@@ -636,7 +636,6 @@ def describe_events(health_client):
     # set hours to search back in time for events
     delta_hours = os.environ['EVENT_SEARCH_BACK']
     health_event_type = os.environ['HEALTH_EVENT_TYPE']
-    health_event_codes = os.environ['HEALTH_EVENT_CODES']
     delta_hours = int(delta_hours)
     time_delta = (datetime.now() - timedelta(hours=delta_hours))
     print("Searching for events and updates made after: ", time_delta)
@@ -661,7 +660,7 @@ def describe_events(health_client):
         region_filter = {'regions': dict_regions}
         str_filter.update(region_filter)
 
-    health_event_codes = [code.strip() for code in health_event_codes.split(',')]
+    health_event_codes = [ code.strip() for code in os.environ['HEALTH_EVENT_CODES'].split(',') ]
 
     event_paginator = health_client.get_paginator('describe_events')
     event_page_iterator = event_paginator.paginate(filter=str_filter)
@@ -706,7 +705,6 @@ def describe_org_events(health_client):
     # set hours to search back in time for events
     delta_hours = os.environ['EVENT_SEARCH_BACK']
     health_event_type = os.environ['HEALTH_EVENT_TYPE']
-    health_event_codes = os.environ['HEALTH_EVENT_CODES']
     dict_regions = os.environ['REGIONS']
     delta_hours = int(delta_hours)
     time_delta = (datetime.now() - timedelta(hours=delta_hours))
@@ -729,7 +727,7 @@ def describe_org_events(health_client):
         region_filter = {'regions': dict_regions}
         str_filter.update(region_filter)
 
-    health_event_codes = [code.strip() for code in health_event_codes.split(',')]
+    health_event_codes = [code.strip() for code in os.environ['HEALTH_EVENT_CODES'].split(',')]
 
     org_event_paginator = health_client.get_paginator('describe_events_for_organization')
     org_event_page_iterator = org_event_paginator.paginate(filter=str_filter)
